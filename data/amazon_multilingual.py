@@ -114,27 +114,32 @@ def buildDataset(x, y, shuffle, buffer, batchsize):
     if buffer is None:
         buffer = length
 
-    dataset = tf.data.Dataset.from_tensor_slices( (x,y) )
+    features_placeholder = tf.placeholder(x.dtype, x.shape)
+    labels_placeholder = tf.placeholder(y.dtype, y.shape)
+
+    dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))
+
     if shuffle == True:
         # tf.data.experimental.AUTOTUNE
         dataset = dataset.shuffle(buffer).batch(batchsize).prefetch(1)
     else:
         print("dataset is not shuffled and prefetched")
 
-    iter = dataset.make_one_shot_iterator()
+    iterator = dataset.make_initializable_iterator()
+    feed_dict = {features_placeholder: x, labels_placeholder: y}
 
-    return iter, length
+    return iterator, feed_dict, length
 
 
 
 if __name__== "__main__":
 
-    iter, length = getData("DE", shuffle=True, buffer=3, batchsize=3)
-    #iter = buildDataset(data_de)
-    #quit()
+    iterator, feed_dict, length = getData("DE", shuffle=True, buffer=4, batchsize=4)
 
     print("sample one example")
 
     with tf.Session() as sess:
-        output = sess.run(iter.get_next())
+        sess.run(iterator.initializer, feed_dict=feed_dict)
+
+        output = sess.run(iterator.get_next())
         print("out:", output)
