@@ -98,14 +98,13 @@ def getData(countryCode, shuffle, buffer=None, batchsize=128):  # DE, UK, US
         del frame
 
     x = np.load(f1, allow_pickle=True)
-    y = np.load(f2)
+    y = np.load(f2).astype(np.int32)
 
-    print(x.shape, y.shape)
-    print(x[:10])
-    print(y[:10])
+    #print(x.shape, y.shape)
+    #print(x[:10])
+    #print(y[:10])
     #print(type(y[0]))
     return buildDataset(x, y, shuffle, buffer, batchsize)
-
 
 
 def buildDataset(x, y, shuffle, buffer, batchsize):
@@ -114,27 +113,55 @@ def buildDataset(x, y, shuffle, buffer, batchsize):
     if buffer is None:
         buffer = length
 
-    features_placeholder = tf.placeholder(x.dtype, x.shape)
-    labels_placeholder = tf.placeholder(y.dtype, y.shape)
+    features_placeholder = tf.placeholder(tf.string, shape=[None])
+    labels_placeholder = tf.placeholder(tf.int32, shape=[None])
 
-    dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))
+    #print(x.shape, x.dtype)
+    #print(y.shape, y.dtype)
+
+    dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))\
+        .batch(batchsize)
 
     if shuffle == True:
         # tf.data.experimental.AUTOTUNE
-        dataset = dataset.shuffle(buffer).batch(batchsize).prefetch(1)
+        dataset = dataset.shuffle(buffer).prefetch(1)
     else:
         print("dataset is not shuffled and prefetched")
 
-    iterator = dataset.make_initializable_iterator()
+    #iterator = dataset.make_initializable_iterator()
     feed_dict = {features_placeholder: x, labels_placeholder: y}
 
-    return iterator, feed_dict, length
+    return dataset, feed_dict, length
 
 
 
 if __name__== "__main__":
+    bs = 5
+    dataset_train, feed_dict_train, length_train = getData("TEST", shuffle=False,batchsize=bs)
 
-    iterator, feed_dict, length = getData("DE", shuffle=True, buffer=4, batchsize=4)
+    dataset_test, feed_dict_test, length_test = getData("TEST", shuffle=False,batchsize=bs)
+
+    iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+    train_iterator = iterator.make_initializer(dataset_train)
+    val_iterator = iterator.make_initializer(dataset_test)
+
+    with tf.Session() as sess:
+        sess.run(train_iterator, feed_dict=feed_dict_train)
+        a = sess.run(iterator.get_next())
+        print(a[0], a[1])
+
+        a = sess.run(iterator.get_next())
+        print(a[0], a[1])
+
+        a = sess.run(iterator.get_next())
+        print(a[0], a[1])
+
+
+
+    print("nice.")
+
+    '''
+    iterator, feed_dict, length = getData("DE", shuffle=True, buffer=4, batchsize=5)
 
     print("sample one example")
 
@@ -143,3 +170,7 @@ if __name__== "__main__":
 
         output = sess.run(iterator.get_next())
         print("out:", output)
+
+        output = sess.run(iterator.get_next())
+        print("out:", output)
+    '''
