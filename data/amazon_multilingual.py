@@ -124,7 +124,7 @@ def buildDataset(x, y, shuffle, buffer, batchsize):
 
     if shuffle == True:
         # tf.data.experimental.AUTOTUNE
-        dataset = dataset.shuffle(buffer).prefetch(1)
+        dataset = dataset.shuffle(buffer).prefetch(tf.data.experimental.AUTOTUNE)
     else:
         print("dataset is not shuffled and prefetched")
 
