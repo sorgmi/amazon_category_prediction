@@ -111,7 +111,7 @@ def buildDataset(x, y, shuffle, buffer, batchsize):
     length = x.shape[0]
 
     if buffer is None:
-        buffer = length
+        buffer = batchsize * 5
 
     features_placeholder = tf.placeholder(tf.string, shape=[None])
     labels_placeholder = tf.placeholder(tf.int32, shape=[None])
