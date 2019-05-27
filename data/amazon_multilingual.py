@@ -100,35 +100,27 @@ def getData(countryCode, shuffle, buffer=None, batchsize=128):  # DE, UK, US
     x = np.load(f1, allow_pickle=True)
     y = np.load(f2).astype(np.int32)
 
-    #print(x.shape, y.shape)
-    #print(x[:10])
-    #print(y[:10])
-    #print(type(y[0]))
-    return buildDataset(x, y, shuffle, buffer, batchsize)
+    return buildDataset(x, y, shuffle, batchsize, buffer)
 
 
-def buildDataset(x, y, shuffle, buffer, batchsize):
+def buildDataset(x, y, shuffle, batchsize, buffer=None):
     length = x.shape[0]
-
-    if buffer is None:
-        buffer = batchsize * 5
 
     features_placeholder = tf.placeholder(tf.string, shape=[None])
     labels_placeholder = tf.placeholder(tf.int32, shape=[None])
 
-    #print(x.shape, x.dtype)
-    #print(y.shape, y.dtype)
-
-    dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))\
-        .batch(batchsize)
+    if shuffle is True and buffer is None:
+        buffer = batchsize * 4
+        print("Using default buffer size:", buffer)
 
     if shuffle == True:
-        # tf.data.experimental.AUTOTUNE
-        dataset = dataset.shuffle(buffer).prefetch(tf.data.experimental.AUTOTUNE)
+        dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder)).shuffle(buffer)
     else:
+        dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))
         print("dataset is not shuffled and prefetched")
 
-    #iterator = dataset.make_initializable_iterator()
+    dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE) #tf.data.experimental.AUTOTUNE
+
     feed_dict = {features_placeholder: x, labels_placeholder: y}
 
     return dataset, feed_dict, length
@@ -137,7 +129,7 @@ def buildDataset(x, y, shuffle, buffer, batchsize):
 
 if __name__== "__main__":
     bs = 5
-    dataset_train, feed_dict_train, length_train = getData("TEST", shuffle=False,batchsize=bs)
+    dataset_train, feed_dict_train, length_train = getData("TEST", shuffle=True,batchsize=bs)
 
     dataset_test, feed_dict_test, length_test = getData("TEST", shuffle=False,batchsize=bs)
 
