@@ -89,11 +89,13 @@ def getData(countryCode, shuffle, buffer=None, batchsize=128):  # DE, UK, US
 
     f1, f2 = generateFilenames(countryCode)
     if os.path.exists(f1) and os.path.exists(f2):
-        print(f1, "and", f2, " exist. Using saved npy files...")
+        pass
+        #print(f1, "and", f2, " exist. Using saved npy files...")
     else:
         print(f1, "or", f2, " missing. Creating it...")
         frame = getAmazonDataFrame("amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz")
         frame.dropna(subset=['review_body'], inplace=True)
+        frame = frame.sample(frac=1)
         dataToFile(frame, countryCode)
         del frame
 
