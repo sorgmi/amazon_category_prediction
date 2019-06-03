@@ -1,5 +1,5 @@
 import csv
-import re
+import sys
 
 import tensorflow as tf
 import os, shutil, gzip
@@ -65,60 +65,46 @@ def downloadData(filename):
     else:
         print(outDir, "already exists. Skipping unzipping")
 
-    return outDir
+
+def get_example_object(csv_row, mapping, labelindex, inputindex):
+    int_list1 = tf.train.Int64List(value=[mapping[csv_row[labelindex]]])
+    str_list1 = tf.train.BytesList(value=[csv_row[inputindex].encode('utf-8')])
+    feature_key_value_pair = {
+        'label': tf.train.Feature(int64_list=int_list1),
+        'input': tf.train.Feature(bytes_list=str_list1),
+    }
+
+    # Create Features object with above feature dictionary
+    features = tf.train.Features(feature=feature_key_value_pair)
+
+    # Create Example object with features
+    example = tf.train.Example(features=features)
+    return example
 
 
-def csvGenerator(filename, labelindex, inputindex):
-    mapping = getCategory2IndexDict()
+def createData(filename, mapping, labelindex, inputindex):
+
+    tfrecords = filename[:-4]+".tfrecord"
+
     with open(filename, encoding="utf8") as csv_file:
         csv.field_size_limit(131072*4)
         csv_reader = csv.reader(csv_file, delimiter='\t')
-        line_len = len(next(csv_reader))
-        for row in csv_reader:
-            if len(row) != line_len:
-                #print("skipping row. different length.", row)
-                continue
+        next(csv_reader)
+        line_count = 0
+        with tf.python_io.TFRecordWriter(tfrecords) as tfwriter:
+            for row in tqdm(csv_reader):
+                try:
+                    example = get_example_object(row, mapping, labelindex, inputindex)
+                    tfwriter.write(example.SerializeToString())
+                    line_count += 1
+                except IndexError:
+                    print("Index error for row:", row)
+        print("processed", line_count, "rows.")
 
-            #if ("&quot;") in row[inputindex]:
-                #print("skipping quote!")
-                #continue
-
-            yield row[inputindex], mapping[row[labelindex]]
-
-
-def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False):
-
-    if countryCode == "TEST":
-        filename = "cache/amazon_reviews_multilingual_TEST_v1_00.tsv"
-    else:
-        filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
-        filename = downloadData(filename)
-
-    dataset = tf.data.Dataset.from_generator(csvGenerator,
-                                             (tf.string,
-                                              tf.int32),
-                                             args=(filename,6,13) )
-
-    if buffer is None:
-        buffer = batchsize * 5
-    if shuffle == True:
-        dataset = dataset.shuffle(buffer)
-
-    #dataset=dataset.map(preprocess)
-    dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE)
-
-    return dataset
+    return tfrecords
 
 
 if __name__== "__main__":
-    bs = 100
-    dataset_train = getData("US", bs, shuffle=False)
+    bs = 2000
+    dataset_train = createData("DE", bs, shuffle=False)
 
-    iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-    train_iterator = iterator.make_initializer(dataset_train)
-
-    with tf.Session() as sess:
-        sess.run(train_iterator)
-
-        a = sess.run(iterator.get_next())
-        #print(a[0], a[1])

@@ -1,10 +1,5 @@
-import csv
-import re
-
 import tensorflow as tf
 import os, shutil, gzip
-
-from tqdm import tqdm
 
 
 def getCategory2IndexDict():
@@ -65,60 +60,64 @@ def downloadData(filename):
     else:
         print(outDir, "already exists. Skipping unzipping")
 
-    return outDir
 
+d = getCategory2IndexDict()
+keys = list(d.keys())
+values = [d[k] for k in keys]
+table = tf.contrib.lookup.HashTable(tf.contrib.lookup.KeyValueTensorInitializer(keys, values, key_dtype=tf.string, value_dtype=tf.int32), -1)
 
-def csvGenerator(filename, labelindex, inputindex):
-    mapping = getCategory2IndexDict()
-    with open(filename, encoding="utf8") as csv_file:
-        csv.field_size_limit(131072*4)
-        csv_reader = csv.reader(csv_file, delimiter='\t')
-        line_len = len(next(csv_reader))
-        for row in csv_reader:
-            if len(row) != line_len:
-                #print("skipping row. different length.", row)
-                continue
+def preprocess(label, text):
+    #print (text.shape)
+    return text, table.lookup(label)
 
-            #if ("&quot;") in row[inputindex]:
-                #print("skipping quote!")
-                #continue
-
-            yield row[inputindex], mapping[row[labelindex]]
 
 
 def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False):
 
-    if countryCode == "TEST":
-        filename = "cache/amazon_reviews_multilingual_TEST_v1_00.tsv"
-    else:
-        filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
-        filename = downloadData(filename)
-
-    dataset = tf.data.Dataset.from_generator(csvGenerator,
-                                             (tf.string,
-                                              tf.int32),
-                                             args=(filename,6,13) )
+    filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
+    downloadData(filename)
+    filename = "cache/" + filename[:-3]
 
     if buffer is None:
-        buffer = batchsize * 5
+        buffer = batchsize*5
+
+    dataset = tf.data.experimental.CsvDataset(
+        filename,
+        [tf.string,  tf.string,],
+        select_cols=[6,13],
+        header=True,
+        field_delim="\t",
+        use_quote_delim=False
+    ).map(preprocess) #lambda x: fun(x, my_arg)
+
+    #dataset = dataset.filter(lambda x,y: tf.size(y)>0)
+
     if shuffle == True:
         dataset = dataset.shuffle(buffer)
 
-    #dataset=dataset.map(preprocess)
     dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE)
 
     return dataset
 
 
+
+
 if __name__== "__main__":
-    bs = 100
-    dataset_train = getData("US", bs, shuffle=False)
+    bs = 2000
+    dataset_train = getData("UK", bs, shuffle=False)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     train_iterator = iterator.make_initializer(dataset_train)
 
     with tf.Session() as sess:
         sess.run(train_iterator)
-
+        sess.run([tf.tables_initializer()])
         a = sess.run(iterator.get_next())
-        #print(a[0], a[1])
+        print(a[0], a[1])
+
+    while True:
+        with tf.Session() as sess:
+            sess.run(train_iterator)
+            sess.run([tf.tables_initializer()])
+            a = sess.run(iterator.get_next())
+            #print(a[0], a[1])

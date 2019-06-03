@@ -3,5 +3,6 @@ data/cache
 presentations/template_169.potx
 .idea/
 blobs/
+tmp/
 
 __pycache__/

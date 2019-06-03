@@ -1,10 +1,7 @@
-import csv
-import re
-
 import tensorflow as tf
 import os, shutil, gzip
 
-from tqdm import tqdm
+import create_tf_record
 
 
 def getCategory2IndexDict():
@@ -68,22 +65,14 @@ def downloadData(filename):
     return outDir
 
 
-def csvGenerator(filename, labelindex, inputindex):
-    mapping = getCategory2IndexDict()
-    with open(filename, encoding="utf8") as csv_file:
-        csv.field_size_limit(131072*4)
-        csv_reader = csv.reader(csv_file, delimiter='\t')
-        line_len = len(next(csv_reader))
-        for row in csv_reader:
-            if len(row) != line_len:
-                #print("skipping row. different length.", row)
-                continue
+features = {
+        'label': tf.FixedLenFeature([], tf.int64),
+        'input': tf.FixedLenFeature([], tf.string),}
 
-            #if ("&quot;") in row[inputindex]:
-                #print("skipping quote!")
-                #continue
+def preprocess(data_record):
 
-            yield row[inputindex], mapping[row[labelindex]]
+    sample = tf.parse_single_example(data_record, features)
+    return sample["input"], sample["label"]
 
 
 def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False):
@@ -94,31 +83,34 @@ def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False
         filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
         filename = downloadData(filename)
 
-    dataset = tf.data.Dataset.from_generator(csvGenerator,
-                                             (tf.string,
-                                              tf.int32),
-                                             args=(filename,6,13) )
+    tfrecords = filename[:-4] + ".tfrecord"
+    if os.path.exists(tfrecords) == True:
+        print(tfrecords, "exists.")
+    else:
+        print("creating", tfrecords, "...")
+        tfrecords = create_tf_record.createData(filename, getCategory2IndexDict(), labelindex=6, inputindex=13)
+
+    dataset = tf.data.TFRecordDataset(tfrecords).map(preprocess)
 
     if buffer is None:
         buffer = batchsize * 5
     if shuffle == True:
         dataset = dataset.shuffle(buffer)
 
-    #dataset=dataset.map(preprocess)
     dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE)
 
     return dataset
 
 
 if __name__== "__main__":
-    bs = 100
-    dataset_train = getData("US", bs, shuffle=False)
+    bs = 5
+    dataset_train = getData("TEST", bs, shuffle=False)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     train_iterator = iterator.make_initializer(dataset_train)
 
     with tf.Session() as sess:
         sess.run(train_iterator)
-
         a = sess.run(iterator.get_next())
-        #print(a[0], a[1])
+        print(a)
+        print(a[0], a[1])
