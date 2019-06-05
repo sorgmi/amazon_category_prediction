@@ -1,6 +1,7 @@
 .ipynb_checkpoints
 data/cache
 presentations/template_169.potx
+presentations/*.pptx
 .idea/
 blobs/
 tmp/
