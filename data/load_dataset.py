@@ -1,10 +1,9 @@
 import csv
 import re
-
 import tensorflow as tf
 import os, shutil, gzip
-
 from tqdm import tqdm
+import pandas
 
 
 def getCategory2IndexDict():
@@ -63,25 +62,32 @@ def downloadData(filename):
         with open(outDir, 'wb') as f_out, gzip.open(p, 'rb') as f_in:
             shutil.copyfileobj(f_in, f_out)
     else:
-        print(outDir, "already exists. Skipping unzipping")
+        pass
+        #print(outDir, "already exists. Skipping unzipping")
 
-    return outDir
+    # shuffle Data
+    csv_path = outDir + ".shuffled.csv"
+    if os.path.exists(csv_path) == False:
+        print("creating", csv_path, "...")
+        frame = pandas.read_csv(outDir, error_bad_lines=False, delimiter="\t").sample(frac=1)
+        frame.to_csv(csv_path)
+    else:
+        print(csv_path, "already exists. Using cached data")
+
+
+    return csv_path
 
 
 def csvGenerator(filename, labelindex, inputindex):
     mapping = getCategory2IndexDict()
     with open(filename, encoding="utf8") as csv_file:
         csv.field_size_limit(131072*4)
-        csv_reader = csv.reader(csv_file, delimiter='\t')
+        csv_reader = csv.reader(csv_file, delimiter=',')
         line_len = len(next(csv_reader))
         for row in csv_reader:
             if len(row) != line_len:
                 #print("skipping row. different length.", row)
                 continue
-
-            #if ("&quot;") in row[inputindex]:
-                #print("skipping quote!")
-                #continue
 
             yield row[inputindex], mapping[row[labelindex]]
 
@@ -97,7 +103,7 @@ def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False
     dataset = tf.data.Dataset.from_generator(csvGenerator,
                                              (tf.string,
                                               tf.int32),
-                                             args=(filename,6,13) )
+                                             args=(filename,7,14) )
 
     if buffer is None:
         buffer = batchsize * 5
@@ -111,8 +117,8 @@ def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False
 
 
 if __name__== "__main__":
-    bs = 100
-    dataset_train = getData("US", bs, shuffle=False)
+    bs = 5
+    dataset_train = getData("DE", bs, shuffle=False)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     train_iterator = iterator.make_initializer(dataset_train)
@@ -121,4 +127,4 @@ if __name__== "__main__":
         sess.run(train_iterator)
 
         a = sess.run(iterator.get_next())
-        #print(a[0], a[1])
+        print(a[0], a[1])
