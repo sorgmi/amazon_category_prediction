@@ -54,9 +54,9 @@ def getCategory2IndexDict():
     return d
 
 
-def downloadData(filename):
+def downloadData(filename, pathToCache):
     p = tf.keras.utils.get_file(filename,origin="https://s3.amazonaws.com/amazon-reviews-pds/tsv/" + filename,
-                                extract=False, cache_dir=".", cache_subdir="cache")
+                                extract=False, cache_dir=pathToCache, cache_subdir="cache")
     outDir = p[0:-3]
     if os.path.exists(outDir) == False:
         with open(outDir, 'wb') as f_out, gzip.open(p, 'rb') as f_in:
@@ -92,13 +92,16 @@ def csvGenerator(filename, labelindex, inputindex):
             yield row[inputindex], mapping[row[labelindex]]
 
 
-def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False):
+def getData(countryCode, batchsize, shuffle, pathToCache=".", buffer=None, filterOtherLangs=False):
 
     if countryCode == "TEST":
-        filename = "cache/amazon_reviews_multilingual_TEST_v1_00.tsv"
+        filename = pathToCache + "cache/amazon_reviews_multilingual_TEST_v1_00.tsv"
+        frame = pandas.read_csv(filename, error_bad_lines=False, delimiter="\t")
+        filename = filename + ".shuffled.csv"
+        frame.to_csv(filename)
     else:
         filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
-        filename = downloadData(filename)
+        filename = downloadData(filename, pathToCache)
 
     dataset = tf.data.Dataset.from_generator(csvGenerator,
                                              (tf.string,
@@ -118,7 +121,7 @@ def getData(countryCode, batchsize, shuffle, buffer=None, filterOtherLangs=False
 
 if __name__== "__main__":
     bs = 5
-    dataset_train = getData("DE", bs, shuffle=False)
+    dataset_train = getData("TEST", bs, shuffle=False)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     train_iterator = iterator.make_initializer(dataset_train)
