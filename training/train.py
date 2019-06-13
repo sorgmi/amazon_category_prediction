@@ -9,7 +9,7 @@ from tensorflow.keras.models import *
 
 import glob, time, datetime, os
 import matplotlib.pyplot as plt
-from tqdm import tqdm as tqdm
+from tqdm import tqdm_notebook as tqdm
 
 from sklearn.metrics import f1_score
 
@@ -102,16 +102,17 @@ def plotAll(path):
 def trainModel(p):
     # init default params
     params = {}
-    params["trainData"] = "US"
-    params["testData"] = "DE"
-    params["epochs"] = 2
+    #params["trainData"] = "US"
+    #params["testData"] = "DE"
+    params["epochs"] = 15
     params["batchSize"] = 512
     params["optimizer"] = tf.train.AdamOptimizer()
-    params["trainexamples"] = 1000
-    params["architecture"] = [False, 50]
+    params["trainexamples"] = 1000 * 100
+    #params["architecture"] = [False]
     params["f1modus"] = "micro"
     params["savelog"] = True
-    params["path"] = "../blobs/test/"
+    params["path"] = "blobs/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
+    params["pathToCache"] = "data/"
 
     params.update(p)  # overwrite default parameter with passed parameter
 
@@ -135,8 +136,8 @@ def trainModel(p):
 
 
     tf.reset_default_graph()
-    dataset_train = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache="../data/")
-    dataset_val = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache="../data/")
+    dataset_train = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
+    dataset_val = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
 
     if params["trainexamples"] is not None:
         dataset_train = dataset_train.take(int(params["trainexamples"] / params["batchSize"]))
@@ -157,6 +158,7 @@ def trainModel(p):
     loss_hist_epoch, acc_hist_epoch, val_loss_hist_epoch, val_acc_hist_epoch, f1_train_epoch, f1_val_epoch = [], [], [], [], [], []
     train_predictions, train_labels, val_predictions, val_labels = [], [], [], []
 
+    startTime = time.time()
     for epoch in tqdm(range(params["epochs"])):
         # print('\nEpoch: {}'.format(epoch + 1))
         train_loss, train_accuracy = 0, 0
@@ -234,6 +236,7 @@ def trainModel(p):
                 epoch + 1, loss_hist_epoch[-1], acc_hist_epoch[-1], train_f1, val_loss_hist_epoch[-1],
                 val_acc_hist_epoch[-1], val_f1))
 
+    trainingTime = time.time() - startTime
     sess.close()
 
     result = {}
@@ -245,11 +248,23 @@ def trainModel(p):
     result["f1_val_epoch"] = f1_val_epoch
     result["loss_hist_epoch"] = loss_hist_epoch
     result["loss_hist_epoch"] = loss_hist_epoch
+    result["train_time_seconds"] = trainingTime
+    result["train_time_minutes"] = trainingTime / 60
 
-    f = open(params["path"] + "result.txt", "w")
-    for k in result:
-        f.write(k + ": " + str(result[k]) + "\n")
-    f.close()
+    if params["savelog"] == True:
+        f = open(params["path"] + "result.txt", "w")
+        for k in result:
+            f.write(k + ": " + str(result[k]) + "\n")
+        f.close()
+
+        # save plots
+        path = params["path"]
+        print("saving results to:", path)
+        a = params["architecture"]
+        plotResults(loss_hist_epoch, "train_loss", val_loss_hist_epoch, "val_loss", str(a) + " loss", path, a)
+        plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a)
+        plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a)
+        plotAll(path)
 
     return result
 
