@@ -236,35 +236,37 @@ def trainModel(p):
                 epoch + 1, loss_hist_epoch[-1], acc_hist_epoch[-1], train_f1, val_loss_hist_epoch[-1],
                 val_acc_hist_epoch[-1], val_f1))
 
-    trainingTime = time.time() - startTime
+
+        # Epoch finished - update and save results
+        trainingTime = time.time() - startTime
+        result = {}
+        result["loss_hist_epoch"] = loss_hist_epoch
+        result["acc_hist_epoch"] = acc_hist_epoch
+        result["val_loss_hist_epoch"] = val_loss_hist_epoch
+        result["val_acc_hist_epoch"] = val_acc_hist_epoch
+        result["f1_train_epoch"] = f1_train_epoch
+        result["f1_val_epoch"] = f1_val_epoch
+        result["loss_hist_epoch"] = loss_hist_epoch
+        result["loss_hist_epoch"] = loss_hist_epoch
+        result["train_time_seconds"] = trainingTime
+        result["train_time_minutes"] = trainingTime / 60
+
+        if params["savelog"] == True:
+            f = open(params["path"] + "result.txt", "w")
+            for k in result:
+                f.write(k + ": " + str(result[k]) + "\n")
+            f.close()
+
+            # save plots
+            path = params["path"]
+            print("saving results to:", path)
+            a = params["architecture"]
+            plotResults(loss_hist_epoch, "train_loss", val_loss_hist_epoch, "val_loss", str(a) + " loss", path, a)
+            plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a)
+            plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a)
+
+    plotAll(path)
     sess.close()
-
-    result = {}
-    result["loss_hist_epoch"] = loss_hist_epoch
-    result["acc_hist_epoch"] = acc_hist_epoch
-    result["val_loss_hist_epoch"] = val_loss_hist_epoch
-    result["val_acc_hist_epoch"] = val_acc_hist_epoch
-    result["f1_train_epoch"] = f1_train_epoch
-    result["f1_val_epoch"] = f1_val_epoch
-    result["loss_hist_epoch"] = loss_hist_epoch
-    result["loss_hist_epoch"] = loss_hist_epoch
-    result["train_time_seconds"] = trainingTime
-    result["train_time_minutes"] = trainingTime / 60
-
-    if params["savelog"] == True:
-        f = open(params["path"] + "result.txt", "w")
-        for k in result:
-            f.write(k + ": " + str(result[k]) + "\n")
-        f.close()
-
-        # save plots
-        path = params["path"]
-        print("saving results to:", path)
-        a = params["architecture"]
-        plotResults(loss_hist_epoch, "train_loss", val_loss_hist_epoch, "val_loss", str(a) + " loss", path, a)
-        plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a)
-        plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a)
-        plotAll(path)
 
     return result
 
@@ -273,5 +275,15 @@ def trainModel(p):
 
 
 if __name__== "__main__":
+
+    from tqdm import tqdm as tqdm
     params = {}
+    params["trainData"] = "TEST"
+    params["testData"] = "TEST"
+    params["path"] = "../blobs/test/"
+    params["pathToCache"] = "../data/"
+    params["architecture"] = [False]
+    params["epochs"] = 5
+    params["trainexamples"] = None
+    params["batchSize"] = 5
     result = trainModel(params)
