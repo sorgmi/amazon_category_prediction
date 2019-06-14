@@ -9,7 +9,8 @@ from tensorflow.keras.models import *
 
 import glob, time, datetime, os
 import matplotlib.pyplot as plt
-from tqdm import tqdm_notebook as tqdm
+#from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm as tqdm
 
 from sklearn.metrics import f1_score
 
@@ -68,6 +69,7 @@ def plotResults(x1, label1, x2, label2, title, path, architecture):
     # print(figpath)
     plt.savefig(figpath)
     plt.show()
+    plt.clf()
 
     np.save(path + str(architecture) + label1 + ".npy", x1)
     np.save(path + str(architecture) + label2 + ".npy", x2)
@@ -265,7 +267,8 @@ def trainModel(p):
             plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a)
             plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a)
 
-    plotAll(path)
+    if params["savelog"] == True:
+        plotAll(path)
     sess.close()
 
     return result
