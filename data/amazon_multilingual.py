@@ -1,10 +1,7 @@
+import csv
 import tensorflow as tf
-import os
-
-import shutil, gzip
-import pandas as pd
-
-import numpy as np
+import os, shutil, gzip
+import pandas
 
 
 def getCategory2IndexDict():
@@ -54,117 +51,60 @@ def getCategory2IndexDict():
         }
     return d
 
-def generateFilenames(countryCode):
-    x1 = "cache/amazon_multilingual_"+countryCode+"_category.npy"
-    x2 = "cache/amazon_multilingual_"+countryCode+"_labels.npy"
-    return (x1,x2)
 
-def getAmazonDataFrame(filename):
+def downloadData(filename, pathToCache):
     p = tf.keras.utils.get_file(filename,origin="https://s3.amazonaws.com/amazon-reviews-pds/tsv/" + filename,
-                                extract=False, cache_dir=".", cache_subdir="cache")
+                                extract=False, cache_dir=pathToCache, cache_subdir="cache")
     outDir = p[0:-3]
     if os.path.exists(outDir) == False:
         with open(outDir, 'wb') as f_out, gzip.open(p, 'rb') as f_in:
             shutil.copyfileobj(f_in, f_out)
     else:
-        print(outDir, "already exists. Skipping unzipping")
-
-    frame = pd.read_csv(p[0:-3], sep='\t', error_bad_lines=False)
-    return frame
-
-
-def dataToFile(data, countryCode):
-    f1, f2 = generateFilenames(countryCode)
-    d = getCategory2IndexDict()
-
-    # TODO: also use headline (review_headline) ?
-    x = data.review_body.values
-    y = [d[x] for x in data.product_category.values]
-
-    np.save(f1, x)
-    np.save(f2, y)
-
-
-def getData(countryCode, shuffle, buffer=None, batchsize=128):  # DE, UK, US
-
-    f1, f2 = generateFilenames(countryCode)
-    if os.path.exists(f1) and os.path.exists(f2):
         pass
-        #print(f1, "and", f2, " exist. Using saved npy files...")
+        #print(outDir, "already exists. Skipping unzipping")
+
+    # shuffle Data
+    csv_path = outDir + ".shuffled.csv"
+    if os.path.exists(csv_path) == False:
+        print("creating", csv_path, "...")
+        frame = pandas.read_csv(outDir, error_bad_lines=False, delimiter="\t").sample(frac=1)
+        frame.to_csv(csv_path)
     else:
-        print(f1, "or", f2, " missing. Creating it...")
-        frame = getAmazonDataFrame("amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz")
-        frame.dropna(subset=['review_body'], inplace=True)
-        frame = frame.sample(frac=1)
-        dataToFile(frame, countryCode)
-        del frame
-
-    x = np.load(f1, allow_pickle=True)
-    y = np.load(f2).astype(np.int32)
-
-    return buildDataset(x, y, shuffle, batchsize, buffer)
+        print(csv_path, "already exists. Using cached data")
 
 
-def buildDataset(x, y, shuffle, batchsize, buffer=None):
-    length = x.shape[0]
+    return csv_path
 
-    features_placeholder = tf.placeholder(tf.string, shape=[None])
-    labels_placeholder = tf.placeholder(tf.int32, shape=[None])
 
-    if shuffle is True and buffer is None:
-        buffer = batchsize * 4
-        print("Using default buffer size:", buffer)
+def csvGenerator(filename, labelindex, inputindex):
+    mapping = getCategory2IndexDict()
+    with open(filename, encoding="utf8") as csv_file:
+        csv.field_size_limit(131072*4)
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_len = len(next(csv_reader))
+        for row in csv_reader:
+            if len(row) != line_len:
+                #print("skipping row. different length.", row)
+                continue
 
-    if shuffle == True:
-        dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder)).shuffle(buffer)
+            yield row[inputindex], mapping[row[labelindex]]
+
+
+def getData(countryCode, pathToCache):
+
+    if countryCode == "TEST":
+        filename = pathToCache + "cache/amazon_reviews_multilingual_TEST_v1_00.tsv"
+        frame = pandas.read_csv(filename, error_bad_lines=False, delimiter="\t")
+        filename = filename + ".shuffled.csv"
+        frame.to_csv(filename)
     else:
-        dataset = tf.data.Dataset.from_tensor_slices((features_placeholder, labels_placeholder))
-        print("dataset is not shuffled and prefetched")
+        filename = "amazon_reviews_multilingual_" + countryCode + "_v1_00.tsv.gz"
+        filename = downloadData(filename, pathToCache)
 
-    dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE) #tf.data.experimental.AUTOTUNE
-
-    feed_dict = {features_placeholder: x, labels_placeholder: y}
-
-    return dataset, feed_dict, length
-
+    dataset = tf.data.Dataset.from_generator(csvGenerator,
+                                             (tf.string,
+                                              tf.int32),
+                                             args=(filename,7,14) )
 
 
-if __name__== "__main__":
-    bs = 5
-    dataset_train, feed_dict_train, length_train = getData("TEST", shuffle=True,batchsize=bs)
-
-    dataset_test, feed_dict_test, length_test = getData("TEST", shuffle=False,batchsize=bs)
-
-    iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-    train_iterator = iterator.make_initializer(dataset_train)
-    val_iterator = iterator.make_initializer(dataset_test)
-
-    with tf.Session() as sess:
-        sess.run(train_iterator, feed_dict=feed_dict_train)
-        a = sess.run(iterator.get_next())
-        print(a[0], a[1])
-
-        a = sess.run(iterator.get_next())
-        print(a[0], a[1])
-
-        a = sess.run(iterator.get_next())
-        print(a[0], a[1])
-
-
-
-    print("nice.")
-
-    '''
-    iterator, feed_dict, length = getData("DE", shuffle=True, buffer=4, batchsize=5)
-
-    print("sample one example")
-
-    with tf.Session() as sess:
-        sess.run(iterator.initializer, feed_dict=feed_dict)
-
-        output = sess.run(iterator.get_next())
-        print("out:", output)
-
-        output = sess.run(iterator.get_next())
-        print("out:", output)
-    '''
+    return dataset
