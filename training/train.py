@@ -68,7 +68,7 @@ def plotResults(x1, label1, x2, label2, title, path, architecture):
     # figpath = figpath.replace()
     # print(figpath)
     plt.savefig(figpath)
-    plt.show()
+    #plt.show()
     plt.clf()
 
     np.save(path + str(architecture) + label1 + ".npy", x1)
@@ -242,6 +242,7 @@ def trainModel(p):
         # Epoch finished - update and save results
         trainingTime = time.time() - startTime
         result = {}
+        result["architecture"] = params["architecture"]
         result["loss_hist_epoch"] = loss_hist_epoch
         result["acc_hist_epoch"] = acc_hist_epoch
         result["val_loss_hist_epoch"] = val_loss_hist_epoch
@@ -254,7 +255,7 @@ def trainModel(p):
         result["train_time_minutes"] = trainingTime / 60
 
         if params["savelog"] == True:
-            f = open(params["path"] + "result.txt", "w")
+            f = open(params["path"] + "result_" + str(params["architecture"]) +".txt", "w")
             for k in result:
                 f.write(k + ": " + str(result[k]) + "\n")
             f.close()
@@ -286,7 +287,7 @@ if __name__== "__main__":
     params["path"] = "../blobs/test/"
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]
-    params["epochs"] = 5
-    params["trainexamples"] = None
+    params["epochs"] = 2
+    params["trainexamples"] = 15
     params["batchSize"] = 5
     result = trainModel(params)
