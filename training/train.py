@@ -20,7 +20,7 @@ class Model:
         self.n_class = 39
         self.architecture = params["architecture"][1:]
         #print("Downloading xling...")
-        self.xling = hub.Module("https://tfhub.dev/google/universal-sentence-encoder-xling-many/1", trainable=params["architecture"][0])
+        self.xling = hub.Module("https://tfhub.dev/google/universal-sentence-encoder-xling/en-de/1", trainable=params["architecture"][0])
         self.data_X = data_X
         self.data_Y = data_Y
         self.create_architecture(data_X, data_Y)
