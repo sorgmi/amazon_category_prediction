@@ -57,7 +57,7 @@ class Model:
         return output
 
 
-def plotResults(x1, label1, x2, label2, title, path, architecture):
+def plotResults(x1, label1, x2, label2, title, path, architecture, showPlot=False):
     plt.plot(x1, label=label1)
     plt.plot(x2, label=label2)
     plt.legend()
@@ -67,21 +67,26 @@ def plotResults(x1, label1, x2, label2, title, path, architecture):
     # figpath = figpath.replace()
     # print(figpath)
     plt.savefig(figpath)
-    #plt.show()
-    plt.clf()
+    if showPlot == True:
+        plt.show()
+    else:
+        plt.clf()
 
     np.save(path + str(architecture) + label1 + ".npy", x1)
     np.save(path + str(architecture) + label2 + ".npy", x2)
 
 
-def plotAll(path):
+def plotAll(path, showPlot=False):
     for f in glob.glob(path + "*loss.npy"):
         x = np.load(f)
         plt.plot(x, label=f[len(path):-4])
     plt.legend()
     plt.ylim(0, 5)
     plt.savefig(path + "allloss.png")
-    plt.show()
+    if showPlot == True:
+        plt.show()
+    else:
+        plt.clf()
 
     for f in glob.glob(path + "*acc*.npy"):
         x = np.load(f)
@@ -89,7 +94,10 @@ def plotAll(path):
     plt.legend()
     plt.ylim(0, 1)
     plt.savefig(path + "allacc.png")
-    plt.show()
+    if showPlot == True:
+        plt.show()
+    else:
+        plt.clf()
 
     for f in glob.glob(path + "*f1*.npy"):
         x = np.load(f)
@@ -97,7 +105,10 @@ def plotAll(path):
     plt.legend()
     plt.ylim(0, 1)
     plt.savefig(path + "allf1.png")
-    plt.show()
+    if showPlot == True:
+        plt.show()
+    else:
+        plt.clf()
 
 
 def trainModel(p):
@@ -112,11 +123,14 @@ def trainModel(p):
     #params["architecture"] = [False]
     params["f1modus"] = "micro"
     params["savelog"] = True
+    params["checkpoint"] = True
     params["path"] = "blobs/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
     params["pathToCache"] = "data/"
     params["notebook"] = False
+    params["showPlots"] = False
 
     params.update(p)  # overwrite default parameter with passed parameter
+    params["learning_rate"] = params["optimizer"]._lr
 
     if params["notebook"] == True:
         from tqdm import tqdm_notebook as tqdm
@@ -165,6 +179,7 @@ def trainModel(p):
     loss_hist_epoch, acc_hist_epoch, val_loss_hist_epoch, val_acc_hist_epoch, f1_train_epoch, f1_val_epoch = [], [], [], [], [], []
     train_predictions, train_labels, val_predictions, val_labels = [], [], [], []
 
+    saver = tf.train.Saver()
     startTime = time.time()
     for epoch in tqdm(range(params["epochs"])):
         # print('\nEpoch: {}'.format(epoch + 1))
@@ -269,12 +284,23 @@ def trainModel(p):
             path = params["path"]
             print("saving results to:", path)
             a = params["architecture"]
-            plotResults(loss_hist_epoch, "train_loss", val_loss_hist_epoch, "val_loss", str(a) + " loss", path, a)
-            plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a)
-            plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a)
+            plotResults(loss_hist_epoch, "train_loss", val_loss_hist_epoch, "val_loss", str(a) + " loss", path, a,params["showPlots"])
+            plotResults(acc_hist_epoch, "acc_train", val_acc_hist_epoch, "acc_val", str(a) + " acc", path, a,params["showPlots"])
+            plotResults(f1_train_epoch, "f1_train", f1_val_epoch, "f1_val", str(a) + " f1", path, a,params["showPlots"])
+
+        # save epoch checkpoint
+        if params["savelog"] == True and params["checkpoint"] == True:
+            saver.save(sess, params["path"] + 'checkpoints/epoch', global_step=epoch+1)
 
     if params["savelog"] == True:
-        plotAll(path)
+        plotAll(path,params["showPlots"])
+        if params["checkpoint"] == True:
+            saver.save(sess, params["path"] + 'checkpoints/final')
+
+    builder = tf.saved_model.builder.SavedModelBuilder(params["path"] + 'finalsaved/')
+    builder.add_meta_graph_and_variables(sess,[tf.saved_model.tag_constants.TRAINING])
+    builder.save()
+
     sess.close()
 
     return result
