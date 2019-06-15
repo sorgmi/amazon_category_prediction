@@ -9,8 +9,7 @@ from tensorflow.keras.models import *
 
 import glob, time, datetime, os
 import matplotlib.pyplot as plt
-#from tqdm import tqdm_notebook as tqdm
-from tqdm import tqdm as tqdm
+
 
 from sklearn.metrics import f1_score
 
@@ -115,8 +114,14 @@ def trainModel(p):
     params["savelog"] = True
     params["path"] = "blobs/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
     params["pathToCache"] = "data/"
+    params["notebook"] = False
 
     params.update(p)  # overwrite default parameter with passed parameter
+
+    if params["notebook"] == True:
+        from tqdm import tqdm_notebook as tqdm
+    else:
+        from tqdm import tqdm as tqdm
 
     if params["savelog"] == True:
         '''
