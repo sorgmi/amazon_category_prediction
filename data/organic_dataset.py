@@ -91,4 +91,13 @@ def getData(countryCode, pathToCache):
                                              (tf.string,tf.int32),
                                              args=(filename, countryCode) )
 
-    return dataset
+    if countryCode.lower().endswith("attribute"):
+        mapping = getAttributeMapping()
+    elif countryCode.lower().endswith("entity"):
+        mapping = getEntityMapping()
+    elif countryCode.lower().endswith("relevance"):
+        mapping = getRelevanceMapping()
+    else:
+        raise NotImplementedError
+
+    return dataset, len(mapping)

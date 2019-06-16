@@ -107,4 +107,4 @@ def getData(countryCode, pathToCache):
                                              args=(filename,7,14) )
 
 
-    return dataset
+    return dataset, len(getCategory2IndexDict())

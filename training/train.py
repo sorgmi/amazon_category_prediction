@@ -15,9 +15,9 @@ from sklearn.metrics import f1_score
 
 
 class Model:
-    def __init__(self, data_X, data_Y, params):
+    def __init__(self, data_X, data_Y, n_classes, params):
         self.params = params
-        self.n_class = 39
+        self.n_class = n_classes
         self.architecture = params["architecture"][1:]
         #print("Downloading xling...")
         self.xling = hub.Module("https://tfhub.dev/google/universal-sentence-encoder-xling/en-de/1", trainable=params["architecture"][0])
@@ -137,6 +137,17 @@ def trainModel(p):
     else:
         from tqdm import tqdm as tqdm
 
+
+    tf.reset_default_graph()
+    dataset_train, num_classes = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
+    dataset_val, num_classes2 = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
+
+    if num_classes != num_classes2:
+        raise Exception("number of classes do not match between train and test set")
+
+    print("classes:", num_classes)
+    params["num_classes"] = num_classes
+
     if params["savelog"] == True:
         '''
         if params["path"] is None:
@@ -155,11 +166,6 @@ def trainModel(p):
             f.write(k + ": " + str(params[k]) + "\n")
         f.close()
 
-
-    tf.reset_default_graph()
-    dataset_train = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
-    dataset_val = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
-
     if params["trainexamples"] is not None:
         dataset_train = dataset_train.take(int(params["trainexamples"] / params["batchSize"]))
         dataset_val = dataset_val.take(int(params["trainexamples"] / params["batchSize"]))
@@ -169,7 +175,7 @@ def trainModel(p):
     val_iterator = iterator.make_initializer(dataset_val)
     text_input, label = iterator.get_next()
 
-    model = Model(text_input, label, params)
+    model = Model(text_input, label, num_classes, params)
 
     init_op = tf.group([tf.local_variables_initializer(), tf.global_variables_initializer(), tf.tables_initializer()])
     sess = tf.Session()
@@ -314,8 +320,9 @@ if __name__== "__main__":
 
     from tqdm import tqdm as tqdm
     params = {}
-    params["trainData"] = "TEST"
-    params["testData"] = "TEST"
+    params["trainData"] = "organic_train_entity"
+    params["testData"] = "organic_test_entity"
+    params["checkpoint"] = False
     params["path"] = "../blobs/test/"
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]

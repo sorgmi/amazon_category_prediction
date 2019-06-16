@@ -4,10 +4,10 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
 
     if countryCode == "DE" or countryCode == "UK" or countryCode == "US" or countryCode == "TEST":
         import data.amazon_multilingual as amazon_multilingual
-        dataset = amazon_multilingual.getData(countryCode, pathToCache=pathToCache)
+        dataset, num_classes = amazon_multilingual.getData(countryCode, pathToCache=pathToCache)
     elif countryCode.startswith("organic"):
-        import organic_dataset
-        dataset = organic_dataset.getData(countryCode, pathToCache=pathToCache)
+        import data.organic_dataset as organic_dataset
+        dataset, num_classes = organic_dataset.getData(countryCode, pathToCache=pathToCache)
     else:
         raise NotImplementedError
 
@@ -19,7 +19,7 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
     #dataset=dataset.map(preprocess)
     dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE)
 
-    return dataset
+    return dataset, num_classes
 
 
 if __name__== "__main__":
