@@ -273,6 +273,7 @@ def trainModel(p):
         result["loss_hist_epoch"] = loss_hist_epoch
         result["train_time_seconds"] = trainingTime
         result["train_time_minutes"] = trainingTime / 60
+        result["epochs"] = epoch + 1
 
         if params["savelog"] == True:
             f = open(params["path"] + "result_" + str(params["architecture"]) +".txt", "w")

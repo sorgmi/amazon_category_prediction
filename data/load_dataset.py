@@ -3,7 +3,7 @@ import tensorflow as tf
 def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filterOtherLangs=False):
 
     if countryCode == "DE" or countryCode == "UK" or countryCode == "US" or countryCode == "TEST":
-        import amazon_multilingual
+        import data.amazon_multilingual as amazon_multilingual
         dataset = amazon_multilingual.getData(countryCode, pathToCache=pathToCache)
     elif countryCode.startswith("organic"):
         import organic_dataset

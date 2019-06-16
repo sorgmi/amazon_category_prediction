@@ -75,12 +75,14 @@ def csvGenerator(filename, countryCode):
 
 def getData(countryCode, pathToCache):
 
-    filename = downloadData(pathToCache)
+    downloadData(pathToCache)
 
     if countryCode.startswith("organic_train"):
         filename = pathToCache + "cache/train_test_validation V0.2/train/dataframe.csv"
     elif countryCode.startswith("organic_test"):
-        raise NotImplementedError
+        filename = pathToCache + "cache/train_test_validation V0.2/test/dataframe.csv"
+    elif countryCode.startswith("organic_val"):
+        filename = pathToCache + "cache/train_test_validation V0.2/validation/dataframe.csv"
     else:
         raise NotImplementedError
 
@@ -88,6 +90,5 @@ def getData(countryCode, pathToCache):
     dataset = tf.data.Dataset.from_generator(csvGenerator,
                                              (tf.string,tf.int32),
                                              args=(filename, countryCode) )
-
 
     return dataset
