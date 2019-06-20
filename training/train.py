@@ -182,7 +182,8 @@ def trainModel(p):
 
     loss_hist, acc_hist, val_loss_hist, val_acc_hist = [], [], [], []
     loss_hist_epoch, acc_hist_epoch, val_loss_hist_epoch, val_acc_hist_epoch, f1_train_epoch, f1_val_epoch = [], [], [], [], [], []
-    train_predictions, train_labels, val_predictions, val_labels = [], [], [], []
+
+    val_pred_labels_hist = []
 
     saver = tf.train.Saver()
     startTime = time.time()
@@ -191,6 +192,8 @@ def trainModel(p):
         train_loss, train_accuracy = 0, 0
         val_loss, val_accuracy = 0, 0
         counter = 0
+
+        train_predictions, train_labels, val_predictions, val_labels = [], [], [], []
 
         sess.run(train_iterator)
 
@@ -257,6 +260,7 @@ def trainModel(p):
         val_loss_hist_epoch.append(val_loss / counter)
         val_acc_hist_epoch.append(val_accuracy / counter)
         val_f1 = f1_score(val_labels, val_predictions, average=params["f1modus"])
+        val_pred_labels_hist.append( (val_labels, val_predictions) )
         f1_val_epoch.append(val_f1)
         print(
             '\n\tEpoch {}: train_loss: {:.4f}, train_acc: {:.4f}, train_micro-f1: {:.4f} || val_loss: {:.4f}, val_acc: {:.4f}, val_micro-f1: {:.4f}'.format(
@@ -287,6 +291,8 @@ def trainModel(p):
             f.close()
             with open(params["path"] + "result_" + str(params["architecture"]) +".pickle","wb") as output_file:
                 pickle.dump(result, output_file)
+
+            np.save(params["path"] + "val_label_pred_hist" + str(params["architecture"]) +".npy", val_pred_labels_hist)
 
             # save plots
             path = params["path"]
@@ -326,10 +332,11 @@ if __name__== "__main__":
     params["trainData"] = "organic_train_entity"
     params["testData"] = "organic_test_entity"
     params["checkpoint"] = False
+    params["savelog"] = True
     params["path"] = "../blobs/test/"
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]
-    params["epochs"] = 2
+    params["epochs"] = 5
     params["trainexamples"] = 15
     params["batchSize"] = 5
     result = trainModel(params)
