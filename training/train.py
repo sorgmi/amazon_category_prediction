@@ -7,9 +7,8 @@ from data import load_dataset
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import *
 
-import glob, time, datetime, os
+import glob, time, datetime, os, pickle
 import matplotlib.pyplot as plt
-
 
 from sklearn.metrics import f1_score
 
@@ -118,7 +117,7 @@ def trainModel(p):
     #params["testData"] = "DE"
     params["epochs"] = 15
     params["batchSize"] = 512
-    params["optimizer"] = tf.train.AdamOptimizer()
+    params["optimizer"] = tf.train.AdamOptimizer(learning_rate=0.001)
     params["trainexamples"] = 1000 * 100
     #params["architecture"] = [False]
     params["f1modus"] = "micro"
@@ -286,6 +285,8 @@ def trainModel(p):
             for k in result:
                 f.write(k + ": " + str(result[k]) + "\n")
             f.close()
+            with open(params["path"] + "result_" + str(params["architecture"]) +".pickle","wb") as output_file:
+                pickle.dump(result, output_file)
 
             # save plots
             path = params["path"]
@@ -304,9 +305,11 @@ def trainModel(p):
         if params["checkpoint"] == True:
             saver.save(sess, params["path"] + 'checkpoints/final')
 
-    builder = tf.saved_model.builder.SavedModelBuilder(params["path"] + 'finalsaved/')
-    builder.add_meta_graph_and_variables(sess,[tf.saved_model.tag_constants.TRAINING])
-    builder.save()
+
+    if params["savelog"] == True and params["checkpoint"] == True:
+        builder = tf.saved_model.builder.SavedModelBuilder(params["path"] + 'finalsaved/')
+        builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.TRAINING])
+        builder.save()
 
     sess.close()
 
