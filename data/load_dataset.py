@@ -39,9 +39,14 @@ def getCategory2IndexDict():
         }
     return d
 
+def index2category(label):
+    for key, value in getCategory2IndexDict().items():
+        if value == label:
+            return key
+
 def numpyToDataset(csvfile, maxrows):
     frame = pandas.read_csv(csvfile, nrows=maxrows) #,sep=sep , usecols=["review_headline", "review_body", "product_category"]
-    features = frame["review_body"]
+    features = frame["review_body"].values
     c2i = getCategory2IndexDict()
     labels = [c2i[x] for x in frame["product_category"].values]
     return tf.data.Dataset.from_tensor_slices((features,labels)), len(c2i)
@@ -75,9 +80,9 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
 
 
 if __name__== "__main__":
-    bs = 5
+    bs = 15
     #dataset_train = getData("organic_train_entity", bs, shuffle=False)
-    dataset_train, _ = getData("us_balanced", bs, shuffle=False, maxrows=100)
+    dataset_train, _ = getData("us_balanced", bs, shuffle=False, maxrows=bs)
 
     iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
     train_iterator = iterator.make_initializer(dataset_train)

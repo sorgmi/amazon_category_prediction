@@ -4,13 +4,14 @@ import numpy as np
 import tf_sentencepiece
 
 from data import load_dataset
+from data import confusion
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import *
 
 import glob, time, datetime, os, pickle
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix, classification_report
 
 
 class Model:
@@ -260,12 +261,14 @@ def trainModel(p):
         val_loss_hist_epoch.append(val_loss / counter)
         val_acc_hist_epoch.append(val_accuracy / counter)
         val_f1 = f1_score(val_labels, val_predictions, average=params["f1modus"])
-        val_pred_labels_hist.append( (val_labels, val_predictions) )
+        val_pred_labels_hist.append( [val_labels, val_predictions] )
         f1_val_epoch.append(val_f1)
         print(
             '\n\tEpoch {}: train_loss: {:.4f}, train_acc: {:.4f}, train_micro-f1: {:.4f} || val_loss: {:.4f}, val_acc: {:.4f}, val_micro-f1: {:.4f}'.format(
                 epoch + 1, loss_hist_epoch[-1], acc_hist_epoch[-1], train_f1, val_loss_hist_epoch[-1],
                 val_acc_hist_epoch[-1], val_f1))
+        print(classification_report(val_labels, val_predictions))
+        confusion.plotCM(val_labels, val_predictions, figsize=(30,20))
 
 
         # Epoch finished - update and save results
@@ -306,7 +309,10 @@ def trainModel(p):
         if params["savelog"] == True and params["checkpoint"] == True:
             saver.save(sess, params["path"] + 'checkpoints/epoch', global_step=epoch+1)
 
+    print(classification_report(val_labels, val_predictions))
+
     if params["savelog"] == True:
+        confusion.plotCM(val_labels, val_predictions, savepath=params["path"], figsize=(30, 20))
         plotAll(path,params["showPlots"])
         if params["checkpoint"] == True:
             saver.save(sess, params["path"] + 'checkpoints/final')
@@ -336,7 +342,7 @@ if __name__== "__main__":
     params["path"] = "../blobs/test/"
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]
-    params["epochs"] = 5
-    params["trainexamples"] = 15
+    params["epochs"] = 2
+    params["trainexamples"] = 10
     params["batchSize"] = 5
     result = trainModel(params)
