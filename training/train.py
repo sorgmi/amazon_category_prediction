@@ -268,7 +268,9 @@ def trainModel(p):
                 epoch + 1, loss_hist_epoch[-1], acc_hist_epoch[-1], train_f1, val_loss_hist_epoch[-1],
                 val_acc_hist_epoch[-1], val_f1))
         print(classification_report(val_labels, val_predictions))
-        confusion.plotCM(val_labels, val_predictions, figsize=(30,20))
+
+        if params["showPlots"] == True:
+            confusion.plotCM(val_labels, val_predictions, figsize=(30,20))
 
 
         # Epoch finished - update and save results
@@ -310,6 +312,10 @@ def trainModel(p):
             saver.save(sess, params["path"] + 'checkpoints/epoch', global_step=epoch+1)
 
     print(classification_report(val_labels, val_predictions))
+
+    if params["savelog"] == True:
+        with open(params["path"] + "classification_report_" + str(params["architecture"]) +".txt","w") as f:
+            f.write(classification_report(val_labels, val_predictions))
 
     if params["savelog"] == True:
         confusion.plotCM(val_labels, val_predictions, savepath=params["path"], figsize=(30, 20))
