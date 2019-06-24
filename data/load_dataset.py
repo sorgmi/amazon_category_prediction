@@ -62,6 +62,8 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
         dataset, num_classes = organic_dataset.getData(countryCode, pathToCache=pathToCache)
     elif countryCode == "german":
         dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_multilingual_DE_v1_00.tsv.shuffled", maxrows)
+    elif countryCode == "german_filtered":
+        dataset, num_classes = numpyToDataset(pathToCache + "amazon_reviews_multilingual_DE_v1_00.tsv.shuffled.filtered", maxrows)
     elif countryCode == "us_balanced":
         dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced.csv.shuffled", maxrows)
 
