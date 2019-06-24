@@ -42,15 +42,19 @@ class Model:
     def forward(self, X):
         output = self.xling(X)
 
-        for x in self.architecture:
+        for index, x in enumerate(self.architecture):
+            name = None
+            if index == len(self.architecture)-1:
+                name = "final_logits"  # specify a name for restoring a saved graph model
+
             if x == "bn":
-                output = tf.layers.batch_normalization(output, training=True)
+                output = tf.layers.batch_normalization(output, training=True, name=name)
             elif x == "relu" or x == "r":
-                output = tf.nn.relu(output)
+                output = tf.nn.relu(output, name=name)
             elif x == "dropout" or x == "d":
-                output = tf.layers.dropout(output)
+                output = tf.layers.dropout(output, name=name)
             else:
-                output = tf.layers.dense(output, x)
+                output = tf.layers.dense(output, x, name=name)
 
         output = tf.layers.dense(output, self.n_class, name="final_output_prediction")
 
