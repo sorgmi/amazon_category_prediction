@@ -44,15 +44,18 @@ def index2category(label):
         if value == label:
             return key
 
-def numpyToDataset(csvfile, maxrows):
+def numpyToDataset(csvfile, maxrows, includeHeading):
     frame = pandas.read_csv(csvfile, nrows=maxrows) #,sep=sep , usecols=["review_headline", "review_body", "product_category"]
-    features = frame["review_body"].values
+    if includeHeading == True:
+        features = frame["review_body"].values + frame["review_headline"].astype(str).values
+    else:
+        features = frame["review_body"].values
     c2i = getCategory2IndexDict()
     labels = [c2i[x] for x in frame["product_category"].values]
     return tf.data.Dataset.from_tensor_slices((features,labels)), len(c2i)
 
 
-def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filterOtherLangs=False,maxrows=None):
+def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filterOtherLangs=False,maxrows=None, includeHeading=False):
 
     if countryCode == "DE" or countryCode == "UK" or countryCode == "US" or countryCode == "TEST":
         import data.amazon_multilingual as amazon_multilingual
@@ -61,11 +64,11 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
         import data.organic_dataset as organic_dataset
         dataset, num_classes = organic_dataset.getData(countryCode, pathToCache=pathToCache)
     elif countryCode == "german":
-        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_multilingual_DE_v1_00.tsv.shuffled", maxrows)
+        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_multilingual_DE_v1_00.tsv.shuffled", maxrows, includeHeading)
     elif countryCode == "german_filtered":
-        dataset, num_classes = numpyToDataset(pathToCache + "amazon_reviews_multilingual_DE_v1_00.tsv.shuffled.filtered", maxrows)
+        dataset, num_classes = numpyToDataset(pathToCache + "amazon_reviews_multilingual_DE_v1_00.tsv.shuffled.filtered", maxrows, includeHeading)
     elif countryCode == "us_balanced":
-        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced.csv.shuffled", maxrows)
+        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced.csv.shuffled", maxrows, includeHeading)
 
     else:
         raise NotImplementedError

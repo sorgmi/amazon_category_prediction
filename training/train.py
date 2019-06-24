@@ -132,6 +132,7 @@ def trainModel(p):
     params["pathToCache"] = "data/"
     params["notebook"] = False
     params["showPlots"] = False
+    params["includeReviewHeadline"] = False
 
     params.update(p)  # overwrite default parameter with passed parameter
     params["learning_rate"] = params["optimizer"]._lr
@@ -143,8 +144,8 @@ def trainModel(p):
 
 
     tf.reset_default_graph()
-    dataset_train, num_classes = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
-    dataset_val, num_classes2 = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"])
+    dataset_train, num_classes = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"])
+    dataset_val, num_classes2 = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"])
 
     if num_classes != num_classes2:
         raise Exception("number of classes do not match between train and test set")
@@ -153,15 +154,6 @@ def trainModel(p):
     params["num_classes"] = num_classes
 
     if params["savelog"] == True:
-        '''
-        if params["path"] is None:
-            path = '/content/gdrive/My Drive/nlp/blobs/' + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
-            os.mkdir(path)
-            params["path"] = path
-        else:
-            path = params["path"]
-        '''
-
         print("saving to:", params["path"])
         if os.path.exists(params["path"]) is False:
             os.mkdir(params["path"])
@@ -345,8 +337,8 @@ if __name__== "__main__":
 
     from tqdm import tqdm as tqdm
     params = {}
-    params["trainData"] = "US"
-    params["testData"] = "DE"
+    params["trainData"] = "us_balanced"
+    params["testData"] = "german"
     params["checkpoint"] = False
     params["savelog"] = True
     params["path"] = "../blobs/test/"
@@ -355,4 +347,5 @@ if __name__== "__main__":
     params["epochs"] = 2
     params["trainexamples"] = 1000
     params["batchSize"] = 16
+    params["includeReviewHeadline"] = True
     result = trainModel(params)
