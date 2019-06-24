@@ -341,14 +341,14 @@ if __name__== "__main__":
 
     from tqdm import tqdm as tqdm
     params = {}
-    params["trainData"] = "organic_train_entity"
-    params["testData"] = "organic_test_entity"
+    params["trainData"] = "US"
+    params["testData"] = "DE"
     params["checkpoint"] = False
     params["savelog"] = True
     params["path"] = "../blobs/test/"
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]
     params["epochs"] = 2
-    params["trainexamples"] = 10
-    params["batchSize"] = 5
+    params["trainexamples"] = 1000
+    params["batchSize"] = 16
     result = trainModel(params)
