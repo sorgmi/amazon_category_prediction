@@ -184,9 +184,9 @@ def trainModel(p):
     loss_hist, acc_hist, val_loss_hist, val_acc_hist = [], [], [], []
     loss_hist_epoch, acc_hist_epoch, val_loss_hist_epoch, val_acc_hist_epoch, f1_train_epoch, f1_val_epoch = [], [], [], [], [], []
 
-    val_pred_labels_hist = []
+    val_labels_pred_hist = []
 
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=5)
     startTime = time.time()
     for epoch in tqdm(range(params["epochs"])):
         # print('\nEpoch: {}'.format(epoch + 1))
@@ -261,10 +261,10 @@ def trainModel(p):
         val_loss_hist_epoch.append(val_loss / counter)
         val_acc_hist_epoch.append(val_accuracy / counter)
         val_f1 = f1_score(val_labels, val_predictions, average=params["f1modus"])
-        val_pred_labels_hist.append( [val_labels, val_predictions] )
+        val_labels_pred_hist.append( [val_labels, val_predictions] )
         f1_val_epoch.append(val_f1)
-        print(
-            '\n\tEpoch {}: train_loss: {:.4f}, train_acc: {:.4f}, train_micro-f1: {:.4f} || val_loss: {:.4f}, val_acc: {:.4f}, val_micro-f1: {:.4f}'.format(
+
+        print('\n\tEpoch {}: train_loss: {:.4f}, train_acc: {:.4f}, train_micro-f1: {:.4f} || val_loss: {:.4f}, val_acc: {:.4f}, val_micro-f1: {:.4f}'.format(
                 epoch + 1, loss_hist_epoch[-1], acc_hist_epoch[-1], train_f1, val_loss_hist_epoch[-1],
                 val_acc_hist_epoch[-1], val_f1))
         print(classification_report(val_labels, val_predictions))
@@ -297,7 +297,7 @@ def trainModel(p):
             with open(params["path"] + "result_" + str(params["architecture"]) +".pickle","wb") as output_file:
                 pickle.dump(result, output_file)
 
-            np.save(params["path"] + "val_label_pred_hist" + str(params["architecture"]) +".npy", val_pred_labels_hist)
+            np.save(params["path"] + "val_label_pred_hist" + str(params["architecture"]) +".npy", val_labels_pred_hist)
 
             # save plots
             path = params["path"]

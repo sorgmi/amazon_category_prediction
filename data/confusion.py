@@ -11,6 +11,9 @@ def plotCM(labels, predictions,savepath=None, figsize=(10, 7)):
     plt.clf()
     plt.figure(figsize=figsize)
     sn.heatmap(df_cm, annot=True, fmt='d')
+    plt.xlabel('Predicted labels')
+    plt.ylabel('True labels')
+    plt.title('Confusion Matrix')
 
     if savepath is not None:
         plt.savefig(savepath+"cm.png")
