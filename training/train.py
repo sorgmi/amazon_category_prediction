@@ -314,7 +314,7 @@ def trainModel(p):
             f.write(classification_report(val_labels, val_predictions))
 
     if params["savelog"] == True:
-        confusion.plotCM(val_labels, val_predictions, savepath=params["path"], figsize=(30, 20))
+        confusion.plotCM(val_labels, val_predictions, savepath=params["path"], figsize=(30, 20), show=params["showPlots"])
         plotAll(path,params["showPlots"])
         if params["checkpoint"] == True:
             saver.save(sess, params["path"] + 'checkpoints/final')
