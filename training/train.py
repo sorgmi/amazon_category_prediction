@@ -133,6 +133,7 @@ def trainModel(p):
     params["notebook"] = False
     params["showPlots"] = False
     params["includeReviewHeadline"] = False
+    params["filterOtherLanguages"] = False
 
     params.update(p)  # overwrite default parameter with passed parameter
     params["learning_rate"] = params["optimizer"]._lr
@@ -144,8 +145,8 @@ def trainModel(p):
 
 
     tf.reset_default_graph()
-    dataset_train, num_classes = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"])
-    dataset_val, num_classes2 = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"])
+    dataset_train, num_classes = load_dataset.getData(params["trainData"], shuffle=True, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"], filterOtherLangs=params["filterOtherLanguages"])
+    dataset_val, num_classes2 = load_dataset.getData(params["testData"], shuffle=False, batchsize=params["batchSize"], pathToCache=params["pathToCache"], includeHeading=params["includeReviewHeadline"],maxrows=params["trainexamples"], filterOtherLangs=params["filterOtherLanguages"])
 
     if num_classes != num_classes2:
         raise Exception("number of classes do not match between train and test set")
