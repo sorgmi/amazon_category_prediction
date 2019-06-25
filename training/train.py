@@ -313,6 +313,8 @@ def trainModel(p):
     if params["savelog"] == True:
         with open(params["path"] + "classification_report_" + str(params["architecture"]) +".txt","w") as f:
             f.write(classification_report(val_labels, val_predictions))
+        with open(params["path"] + "classification_report_" + str(params["architecture"]) +".pickle","wb") as f:
+            pickle.dump(classification_report(val_labels, val_predictions), f)
 
     if params["savelog"] == True:
         confusion.plotCM(val_labels, val_predictions, savepath=params["path"], figsize=(30, 20), show=params["showPlots"])
@@ -346,7 +348,10 @@ if __name__== "__main__":
     params["pathToCache"] = "../data/"
     params["architecture"] = [False]
     params["epochs"] = 2
-    params["trainexamples"] = 1000
-    params["batchSize"] = 16
-    params["includeReviewHeadline"] = True
+    params["trainexamples"] = 100
+    params["batchSize"] = 32
+
+    params["includeReviewHeadline"] = False
+    params["filterOtherLanguages"] = False
+
     result = trainModel(params)
