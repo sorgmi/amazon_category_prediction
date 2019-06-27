@@ -29,8 +29,17 @@ class Model:
         # y_hot = tf.one_hot(data_Y, depth=self.n_class)
         self.logits = self.forward(data_X)
 
+        
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=data_Y, logits=self.logits))
-        self.train_op = self.params["optimizer"].minimize(self.loss)
+        self.vars   = tf.trainable_variables()
+        self.lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in self.vars if 'bias' not in v.name ]) * 0.001
+        
+        if self.params["regularization"] == True:
+          self.train_op = self.params["optimizer"].minimize(self.loss + self.lossL2)
+        else:
+          self.train_op = self.params["optimizer"].minimize(self.loss)
+        
+        #self.train_op = self.params["optimizer"].minimize(self.loss)
 
         self.predictions = tf.argmax(self.logits, 1)
         self.labels = data_Y
@@ -134,6 +143,7 @@ def trainModel(p):
     params["showPlots"] = False
     params["includeReviewHeadline"] = False
     params["filterOtherLanguages"] = False
+    params["regularization"] = False
 
     params.update(p)  # overwrite default parameter with passed parameter
     params["learning_rate"] = params["optimizer"]._lr
