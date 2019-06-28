@@ -37,6 +37,13 @@ def plotfromExperiment(path, epoch):
         x = np.load(f)[epoch]
         plotCM(x[0], x[1], path, show=False)
 
+def getClassificationReport(path, epoch):
+    files = glob.glob(path+"val_label_pred_hist*.npy")
+    for f in files:
+        x = np.load(f)[epoch]
+        r = classification_report(x[0],x[1])
+        print(r)
+
 
 
 if __name__== "__main__":

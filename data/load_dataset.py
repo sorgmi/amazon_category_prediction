@@ -66,9 +66,11 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
     elif countryCode == "german":
         dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_multilingual_DE_v1_00.tsv.shuffled", maxrows, includeHeading)
     elif countryCode == "german_filtered":
-        dataset, num_classes = numpyToDataset(pathToCache + "amazon_reviews_multilingual_DE_v1_00.tsv.shuffled.filtered", maxrows, includeHeading)
+        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_multilingual_DE_v1_00.tsv.shuffled.filtered", maxrows, includeHeading)
     elif countryCode == "us_balanced":
         dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced.csv.shuffled", maxrows, includeHeading)
+    elif countryCode == "us_balanced_validation":
+        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced_validation.csv.shuffled", None, includeHeading)
 
     else:
         raise NotImplementedError
@@ -78,7 +80,6 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
     if shuffle == True:
         dataset = dataset.shuffle(buffer)
 
-    #dataset=dataset.map(preprocess)
     dataset = dataset.batch(batchsize).prefetch(tf.data.experimental.AUTOTUNE)
 
     return dataset, num_classes
