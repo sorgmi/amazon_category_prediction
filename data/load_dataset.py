@@ -72,6 +72,9 @@ def getData(countryCode, batchsize, shuffle, pathToCache="./", buffer=None, filt
     elif countryCode == "us_balanced_validation":
         dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced_validation.csv.shuffled", None, includeHeading)
 
+    elif countryCode == "us_balanced_50k":
+        dataset, num_classes = numpyToDataset(pathToCache + "cache/amazon_reviews_us_balanced.csv.shuffled.50k", maxrows, includeHeading)
+
     else:
         raise NotImplementedError
 
