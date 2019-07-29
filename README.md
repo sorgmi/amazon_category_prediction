@@ -1,7 +1,7 @@
 # Multi-Lingual Theme Prediction of Customer Reviews Using Deep Pre-Trained Embeddings
 
 Code and report for the practical course "NLP for opinion mining" at TU Munich.
-See [report.html](report.html).
+See [report.ipynb](report.ipynb).
 
 Tasks:
 - [ ] Train a category prediction model on the Amazon product review dataset based on XLING embeddings per review
