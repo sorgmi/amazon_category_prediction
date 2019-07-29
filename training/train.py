@@ -13,7 +13,11 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import f1_score, confusion_matrix, classification_report
 
-
+'''
+Model (tensorflow graph) definition. This class gets a list representing the architecture as parameter.
+For exaple [False, 150, "r", "d"] means we use non-trainable XLING embeddings + fc layer with 150 units followed
+by relu and dropout. The final classification layer is always a softmax layer.
+'''
 class Model:
     def __init__(self, data_X, data_Y, n_classes, params):
         self.params = params
@@ -26,10 +30,8 @@ class Model:
         self.create_architecture(data_X, data_Y)
 
     def create_architecture(self, data_X, data_Y):
-        # y_hot = tf.one_hot(data_Y, depth=self.n_class)
         self.logits = self.forward(data_X)
 
-        
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=data_Y, logits=self.logits))
         self.vars   = tf.trainable_variables()
         self.lossL2 = tf.add_n([ tf.nn.l2_loss(v) for v in self.vars if 'bias' not in v.name ]) * 0.001
@@ -38,14 +40,10 @@ class Model:
           self.train_op = self.params["optimizer"].minimize(self.loss + self.lossL2)
         else:
           self.train_op = self.params["optimizer"].minimize(self.loss)
-        
-        #self.train_op = self.params["optimizer"].minimize(self.loss)
 
         self.predictions = tf.argmax(self.logits, 1)
         self.labels = data_Y
-        # self.acc, self.acc_op = tf.metrics.accuracy(labels=data_Y, predictions=self.predictions)
 
-        # a = tf.cast(self.predictions, tf.float64)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.predictions, tf.cast(data_Y, tf.int64)), tf.float32))
 
     def forward(self, X):
@@ -55,7 +53,6 @@ class Model:
             name = None
             if index == len(self.architecture)-1:
                 name = "final_logits"  # specify a name for restoring a saved graph model
-
             if x == "bn":
                 output = tf.layers.batch_normalization(output, training=True, name=name)
             elif x == "relu" or x == "r":
@@ -123,7 +120,12 @@ def plotAll(path, showPlot=False):
     else:
         plt.clf()
 
-
+'''
+This is the main training loop. Here we load the datasets and iterate over theem the respective number of epochs.
+For each epoch we train and evaluate and additionally plot the loss and other metrics.
+Optionally the results (loss, metrics...), model checkpoints and model checkpoints can be saved to a folder for later
+evaluation.
+'''
 def trainModel(p):
     # init default params
     params = {}
@@ -210,17 +212,6 @@ def trainModel(p):
                 while True:
                     _, a, l, predictions, labels = sess.run(
                         [model.train_op, model.accuracy, model.loss, model.predictions, model.labels])
-                    # print(a,l)
-
-                    '''
-                    if l > 0 and l < 15:
-                        pass
-                    else:
-                        print(l)
-                        print(counter)
-                        print(sess.run(model.data_X))
-                        # print(tf.print(model.data_Y))
-                    '''
 
                     train_loss += l
                     train_accuracy += a
@@ -235,13 +226,11 @@ def trainModel(p):
                     counter += 1
         except tf.errors.OutOfRangeError:
             pass
-            # print("\tfinished after", counter, "batches.")
 
         loss_hist_epoch.append(train_loss / counter)
         acc_hist_epoch.append(train_accuracy / counter)
         train_f1 = f1_score(train_labels, train_predictions, average=params["f1modus"])
         f1_train_epoch.append(train_f1)
-        # print('\nEpoch: {}'.format(epoch + 1))
 
         # Validation
         counter = 0
