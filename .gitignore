@@ -7,3 +7,6 @@ blobs/
 tmp/
 
 __pycache__/
+
+
+*.ini
